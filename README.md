@@ -1,6 +1,6 @@
 # inflation_py 
-An implementaion of inflation from silhouettes.
-Generate height/depth map and mesh from silhouettes.
+An implementation of inflation from silhouettes in python.
+Generate a height/depth map and a mesh from a single silhouette.
 No machine learning is included.
 
 # Sample inputs and outputs
@@ -17,7 +17,7 @@ This method tends to cause steepy surfaces.
 Additioanlly, you can set activation function to operate steepness but it is difficult to control.
 
 ## Baran's method
-Based on Poisson equation.
+Based on Poisson's equation.
 Implementation of the following paper:
 "Notes on Inflating Curves" [Baran and Lehtinen 2009](http://alecjacobson.com/weblog/media/notes-on-inflating-curves-2009-baran.pdf).
 This method generates smooth surfaces considering gradient space.
