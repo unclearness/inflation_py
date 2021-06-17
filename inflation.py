@@ -111,6 +111,72 @@ def activation_tanh(factor):
     return lambda x: np.tanh(x * factor) / factor
 
 
+# Implementation of the following paper
+# "Notes on Inflating Curves" [Baran and Lehtinen 2009].
+# http://alecjacobson.com/weblog/media/notes-on-inflating-curves-2009-baran.pdf
+def inflationByBaran(mask):
+    h, w = mask.shape
+    depth = np.zeros((h, w))
+    img2param_idx = {}
+    param_idx = 0
+
+    def get_idx(x, y):
+        return y * w + x
+
+    for y in range(h):
+        for x in range(w):
+            c = mask[y, x]
+            if c != 0:
+                img2param_idx[get_idx(x, y)] = param_idx
+                param_idx += 1
+    num_param = len(img2param_idx.keys())
+    triplets = []
+    cur_row = 0
+    # 4 neighbor laplacian
+    for y in range(1, h-1):
+        for x in range(1, w-1):
+            c = mask[y, x]
+            if c == 0:
+                continue
+            triplets.append([cur_row, img2param_idx[get_idx(x, y)], -4.0])
+            kernels = [(y, x - 1), (y, x + 1), (y - 1, x), (y + 1, x)]
+            for kernel in kernels:
+                jj, ii = kernel
+                if mask[jj, ii] != 0:
+                    triplets.append([cur_row, img2param_idx[get_idx(ii, jj)], 1.0])
+            cur_row += 1  # Go to the next equation
+    # TODO
+    # use sparse matrix
+    A = np.zeros((num_param, num_param))
+    # Set from triplets
+    for tri in triplets:
+        row = tri[0]
+        col = tri[1]
+        val = tri[2]
+        A[row, col] = val
+    b = np.zeros((num_param, 1))
+    rhs = -4.0
+    cur_row = 0
+    for y in range(1, h-1):
+        for x in range(1, w-1):
+            c = mask[y, x]
+            if c == 0:
+                continue
+            b[cur_row] = rhs
+            cur_row += 1
+    x = np.linalg.solve(A, b)
+
+    for j in range(1, h-1):
+        for i in range(1, w-1):
+            c = mask[j, i]
+            if c == 0:
+                continue
+            idx = img2param_idx[get_idx(i, j)]
+            # setting z = √ h
+            depth[j, i] = np.sqrt(x[idx])
+    return depth
+
+
 if __name__ == '__main__':
     names = ['A', 'circle', 'character', 'hiragana', 'square']
 
@@ -120,6 +186,10 @@ if __name__ == '__main__':
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         mask[mask > 100] = 255
         mask[mask <= 100] = 0
+        depth = inflationByBaran(mask)
+        vertices, faces = depth2orthomesh(depth)
+        writeMeshAsPly(name + '_baran.ply', vertices, faces)
+
         depth = inflationByDistanceTransform(mask)
         vertices, faces = depth2orthomesh(depth)
         writeMeshAsPly(name + '_dist.ply', vertices, faces)
