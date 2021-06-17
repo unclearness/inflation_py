@@ -112,7 +112,7 @@ def activation_tanh(factor):
 
 
 if __name__ == '__main__':
-    names = ['A', 'circle', 'hiragana', 'square', 's']
+    names = ['A', 'circle', 'character', 'hiragana', 'square']
 
     for name in names:
         mask_path = './data/' + name + '.png'
