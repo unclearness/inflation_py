@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from scipy.sparse import coo_matrix, linalg
 
 def depth2orthomesh(depth, x_step=1, y_step=1, scale=[1.0, 1.0, 1.0], minus_depth=True):
     vertices = []
@@ -114,7 +115,7 @@ def activation_tanh(factor):
 # Implementation of the following paper
 # "Notes on Inflating Curves" [Baran and Lehtinen 2009].
 # http://alecjacobson.com/weblog/media/notes-on-inflating-curves-2009-baran.pdf
-def inflationByBaran(mask):
+def inflationByBaran(mask, use_sparse=True):
     h, w = mask.shape
     depth = np.zeros((h, w))
     img2param_idx = {}
@@ -145,15 +146,7 @@ def inflationByBaran(mask):
                 if mask[jj, ii] != 0:
                     triplets.append([cur_row, img2param_idx[get_idx(ii, jj)], 1.0])
             cur_row += 1  # Go to the next equation
-    # TODO
-    # use sparse matrix
-    A = np.zeros((num_param, num_param))
-    # Set from triplets
-    for tri in triplets:
-        row = tri[0]
-        col = tri[1]
-        val = tri[2]
-        A[row, col] = val
+    # Prepare right hand side
     b = np.zeros((num_param, 1))
     rhs = -4.0
     cur_row = 0
@@ -164,7 +157,28 @@ def inflationByBaran(mask):
                 continue
             b[cur_row] = rhs
             cur_row += 1
-    x = np.linalg.solve(A, b)
+    if use_sparse:
+        # Sparse matrix version
+        data, row, col = [], [], []
+        for tri in triplets:
+            row.append(tri[0])
+            col.append(tri[1])
+            data.append(tri[2])
+        data = np.array(data)
+        row = np.array(row, dtype=np.int)
+        col = np.array(col, dtype=np.int)
+        A = coo_matrix((data, (row, col)), shape=(num_param, num_param))
+        x = linalg.spsolve(A, b)
+    else:
+        # Dense matrix version
+        A = np.zeros((num_param, num_param))
+        # Set from triplets
+        for tri in triplets:
+            row = tri[0]
+            col = tri[1]
+            val = tri[2]
+            A[row, col] = val
+        x = np.linalg.solve(A, b)
 
     for j in range(1, h-1):
         for i in range(1, w-1):
