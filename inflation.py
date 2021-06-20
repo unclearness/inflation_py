@@ -191,6 +191,21 @@ def inflationByBaran(mask, use_sparse=True):
     return depth
 
 
+def visualizeDepth(depth, path='', dmin=0, dmax=50, cm_name='viridis'):
+    import matplotlib.pyplot as plt
+    cm = plt.get_cmap(cm_name)
+    colors = (np.array(cm.colors) * 255).astype(np.uint8)
+    colors = colors[..., ::-1] # -> BGR
+    
+    normed = np.clip((depth - dmin) / (dmax - dmin), 0, 1)
+    normed = (normed * 255).astype(np.uint8)
+    
+    vis = colors[normed]
+    if path != '':
+        cv2.imwrite(path, vis)
+    return vis
+
+
 if __name__ == '__main__':
     names = ['A', 'circle', 'character', 'hiragana', 'square']
 
@@ -200,13 +215,18 @@ if __name__ == '__main__':
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         mask[mask > 100] = 255
         mask[mask <= 100] = 0
+        
         depth = inflationByBaran(mask)
+        visualizeDepth(depth, name + '_baran.jpg')
         vertices, faces = depth2orthomesh(depth)
         writeMeshAsPly(name + '_baran.ply', vertices, faces)
 
         depth = inflationByDistanceTransform(mask)
+        visualizeDepth(depth, name + '_dist.jpg')
         vertices, faces = depth2orthomesh(depth)
         writeMeshAsPly(name + '_dist.ply', vertices, faces)
+
         depth = inflationByDistanceTransform(mask, activation_tanh(0.02))
+        visualizeDepth(depth, name + '_dist_tanh.jpg')
         vertices, faces = depth2orthomesh(depth)
         writeMeshAsPly(name + '_dist_tanh.ply', vertices, faces)
