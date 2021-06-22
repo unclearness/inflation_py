@@ -3,11 +3,16 @@ An implementation of inflation from silhouettes in python.
 Generate a height/depth map and a mesh from a single silhouette.
 No machine learning is included.
 
+# Run
+`python inflation.py` generates sample outputs.
+
+OpenCV, numpy and scipy are required as dependencies.
+
 # Sample inputs and outputs
 - Input
-  - A singple silhouette
+  - A single silhouette (mask) image
 - Output
-  - a depth/height map (colorized) and a screenshot of a shaded mesh
+  - a depth/height map (colorized) and a mesh in .ply format (its shaded rendering is shown in the table below)
 
 |Input silhouettes|<img src="./data/circle.png" width="128">|<img src="./data/square.png" width="128">|<img src="./data/A.png" width="128">|<img src="./data/hiragana.png" width="128">|<img src="./data/character.png" height="128">|
 |---|:---:|:---:|:---:|:---:|:---:|
